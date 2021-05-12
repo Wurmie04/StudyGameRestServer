@@ -18,10 +18,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object Score : Table(){
@@ -32,6 +29,7 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
+    var scoreList : MutableList<convertScore> = mutableListOf()
 
     Database.connect("jdbc:sqlite:./StudyGame.db", "org.sqlite.JDBC")
     transaction{
@@ -53,7 +51,21 @@ fun Application.module(testing: Boolean = false) {
         }
         //get the highest score for Multiple Choice Game
         get("StudyGame/MCHighScore"){
-
+            scoreList = mutableListOf()
+            transaction {
+                val sList = Score.selectAll()
+                for(s in sList){
+                    scoreList.add(convertScore(s[Score.score]))
+                }
+            }
+            var highestScore = 0
+            for(i in scoreList){
+                if(i.score > highestScore){
+                    highestScore = i.score
+                }
+            }
+            val scoreListJson = Json.encodeToString(highestScore)
+            call.respondText("${scoreListJson}", status = HttpStatusCode.OK, contentType = ContentType.Application.Json)
         }
         //add Memory Game score into database
         post("StudyGame/addMemoryScore"){
