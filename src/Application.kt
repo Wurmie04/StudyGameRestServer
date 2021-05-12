@@ -42,11 +42,11 @@ fun Application.module(testing: Boolean = false) {
         post("StudyGame/addMCScore"){
             val paramsJsonStr = call.receiveText()
 
-            val myScore = Json.decodeFromString<String>(paramsJsonStr).toInt()
+            val myScore = Json.decodeFromString<convertScore>(paramsJsonStr)
 
             transaction {
                 Score.insert {
-                    it[score] = myScore
+                    it[score] = myScore.score
                 }
             }
             call.respondText("Parameters sent : $paramsJsonStr", status = HttpStatusCode.OK, contentType=ContentType.Application.Json)
